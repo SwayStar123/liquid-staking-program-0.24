@@ -20,7 +20,7 @@ impl<'info> PartialUnstake<'info> {
         stake_index: u32,
         validator_index: u32,
         desired_unstake_amount: u64,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         assert!(
             desired_unstake_amount >= self.state.stake_system.min_stake,
             "desired_unstake_amount too low"
@@ -211,7 +211,7 @@ impl<'info> PartialUnstake<'info> {
                         stake_account_len,
                         self.split_stake_account.data_len()
                     );
-                    return Err(ProgramError::InvalidAccountData);
+                    return Err(ProgramError::InvalidAccountData.into());
                 }
                 if !self.rent.is_exempt(
                     self.split_stake_account.lamports(),
@@ -221,7 +221,7 @@ impl<'info> PartialUnstake<'info> {
                         "Split stake account {} must be rent-exempt",
                         self.split_stake_account.key
                     );
-                    return Err(ProgramError::InsufficientFunds);
+                    return Err(ProgramError::InsufficientFunds.into());
                 }
                 match bincode::deserialize(&self.split_stake_account.data.as_ref().borrow())
                     .map_err(|err| ProgramError::BorshIoError(err.to_string()))?
@@ -232,7 +232,7 @@ impl<'info> PartialUnstake<'info> {
                             "Split stake {} must be uninitialized",
                             self.split_stake_account.key
                         );
-                        return Err(ProgramError::InvalidAccountData);
+                        return Err(ProgramError::InvalidAccountData.into());
                     }
                 }
             }

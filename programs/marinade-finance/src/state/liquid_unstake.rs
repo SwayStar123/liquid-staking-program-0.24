@@ -10,7 +10,7 @@ use crate::{
 };
 
 impl<'info> LiquidUnstake<'info> {
-    fn check_get_msol_from(&self, msol_amount: u64) -> ProgramResult {
+    fn check_get_msol_from(&self, msol_amount: u64) -> Result<()> {
         check_token_mint(&self.get_msol_from, self.state.msol_mint, "get_msol_from")?;
         // if delegated, check delegated amount
         if *self.get_msol_from_authority.key == self.get_msol_from.owner {
@@ -20,7 +20,7 @@ impl<'info> LiquidUnstake<'info> {
                     msol_amount,
                     self.get_msol_from.amount
                 );
-                return Err(ProgramError::InsufficientFunds);
+                return Err(ProgramError::InsufficientFunds.into());
             }
         } else if self
             .get_msol_from
@@ -35,25 +35,25 @@ impl<'info> LiquidUnstake<'info> {
                     self.get_msol_from.delegated_amount,
                     msol_amount
                 );
-                return Err(ProgramError::InsufficientFunds);
+                return Err(ProgramError::InsufficientFunds.into());
             }
         } else {
             msg!(
                 "Token must be delegated to {}",
                 self.get_msol_from_authority.key
             );
-            return Err(ProgramError::InvalidArgument);
+            return Err(ProgramError::InvalidArgument.into());
         }
         Ok(())
     }
 
-    fn check_transfer_sol_to(&self) -> ProgramResult {
+    fn check_transfer_sol_to(&self) -> Result<()> {
         check_owner_program(&self.transfer_sol_to, &system_program::ID, "transfer_from")?;
         Ok(())
     }
 
     // fn liquid_unstake()
-    pub fn process(&mut self, msol_amount: u64) -> ProgramResult {
+    pub fn process(&mut self, msol_amount: u64) -> Result<()> {
         msg!("enter LiquidUnstake");
 
         self.state

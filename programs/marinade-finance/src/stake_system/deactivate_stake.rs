@@ -20,7 +20,7 @@ impl<'info> DeactivateStake<'info> {
     //
     // fn deactivate_stake()
     //
-    pub fn process(&mut self, stake_index: u32, validator_index: u32) -> ProgramResult {
+    pub fn process(&mut self, stake_index: u32, validator_index: u32) -> Result<()> {
         self.state.check_reserve_address(self.reserve_pda.key)?;
         self.state
             .validator_system
@@ -64,7 +64,7 @@ impl<'info> DeactivateStake<'info> {
                 "Stake delta is available only last {} slots of epoch",
                 self.state.stake_system.slots_for_stake_delta
             );
-            return Err(ProgramError::Custom(332));
+            return Err(ProgramError::Custom(332).into());
         }
 
         // compute total required stake delta (i128, must be negative)
@@ -72,7 +72,7 @@ impl<'info> DeactivateStake<'info> {
         msg!("total_stake_delta_i128 {}", total_stake_delta_i128);
         if total_stake_delta_i128 >= 0 {
             msg!("Must stake {} instead of unstaking", total_stake_delta_i128);
-            return Err(ProgramError::InvalidAccountData);
+            return Err(ProgramError::InvalidAccountData.into());
         }
         // convert to u64
         let total_unstake_delta =
@@ -250,7 +250,7 @@ impl<'info> DeactivateStake<'info> {
                         stake_accout_len,
                         self.split_stake_account.data_len()
                     );
-                    return Err(ProgramError::InvalidAccountData);
+                    return Err(ProgramError::InvalidAccountData.into());
                 }
                 if !self.rent.is_exempt(
                     self.split_stake_account.lamports(),
@@ -260,7 +260,7 @@ impl<'info> DeactivateStake<'info> {
                         "Split stake account {} must be rent-exempt",
                         self.split_stake_account.key
                     );
-                    return Err(ProgramError::InsufficientFunds);
+                    return Err(ProgramError::InsufficientFunds.into());
                 }
                 match bincode::deserialize(&self.split_stake_account.data.as_ref().borrow())
                     .map_err(|err| ProgramError::BorshIoError(err.to_string()))?
@@ -271,7 +271,7 @@ impl<'info> DeactivateStake<'info> {
                             "Split stake {} must be uninitialized",
                             self.split_stake_account.key
                         );
-                        return Err(ProgramError::InvalidAccountData);
+                        return Err(ProgramError::InvalidAccountData.into());
                     }
                 }
             }

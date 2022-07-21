@@ -10,21 +10,21 @@ use crate::{
 };
 
 impl<'info> Deposit<'info> {
-    fn check_transfer_from(&self, lamports: u64) -> ProgramResult {
+    fn check_transfer_from(&self, lamports: u64) -> Result<()> {
         check_owner_program(&self.transfer_from, &system_program::ID, "transfer_from")?;
         if self.transfer_from.lamports() < lamports {
-            return Err(ProgramError::InsufficientFunds);
+            return Err(ProgramError::InsufficientFunds.into());
         }
         Ok(())
     }
 
-    fn check_mint_to(&self) -> ProgramResult {
+    fn check_mint_to(&self) -> Result<()> {
         check_token_mint(&self.mint_to, self.state.msol_mint, "mint_to")?;
         Ok(())
     }
 
     // fn deposit_sol()
-    pub fn process(&mut self, lamports: u64) -> ProgramResult {
+    pub fn process(&mut self, lamports: u64) -> Result<()> {
         check_min_amount(lamports, self.state.min_deposit, "deposit SOL")?;
         self.state.check_reserve_address(self.reserve_pda.key)?;
         self.state
@@ -55,7 +55,7 @@ impl<'info> Deposit<'info> {
                 "Warning: mSOL minted {} lamports outside of marinade",
                 self.msol_mint.supply - self.state.msol_supply
             );
-            return Err(ProgramError::InvalidAccountData);
+            return Err(ProgramError::InvalidAccountData.into());
         }
 
         let user_lamports = lamports;

@@ -24,7 +24,7 @@ struct BeginOutput {
 }
 
 impl<'info> UpdateCommon<'info> {
-    fn begin(&mut self, stake_index: u32) -> Result<BeginOutput, ProgramError> {
+    fn begin(&mut self, stake_index: u32) -> Result<BeginOutput> {
         /*
         self.state
             .validator_system
@@ -89,7 +89,7 @@ impl<'info> UpdateCommon<'info> {
         })
     }
 
-    pub fn withdraw_to_reserve(&mut self, amount: u64) -> ProgramResult {
+    pub fn withdraw_to_reserve(&mut self, amount: u64) -> Result<()> {
         if amount > 0 {
             self.state.with_stake_withdraw_authority_seeds(|seeds| {
                 // Move unstaked + rewards for restaking
@@ -117,7 +117,7 @@ impl<'info> UpdateCommon<'info> {
         Ok(())
     }
 
-    pub fn mint_to_treasury(&mut self, msol_lamports: u64) -> ProgramResult {
+    pub fn mint_to_treasury(&mut self, msol_lamports: u64) -> Result<()> {
         if msol_lamports > 0 {
             self.state.with_msol_mint_authority_seeds(|seeds| {
                 mint_to(
@@ -147,7 +147,7 @@ impl<'info> UpdateActive<'info> {
     /// (cool-down period is complete) delete-withdraw the stake-account, send SOL to reserve-account
     //
     // fn update_active()
-    pub fn process(&mut self, stake_index: u32, validator_index: u32) -> ProgramResult {
+    pub fn process(&mut self, stake_index: u32, validator_index: u32) -> Result<()> {
         let BeginOutput {
             mut stake,
             is_treasury_msol_ready_for_transfer,
@@ -168,7 +168,7 @@ impl<'info> UpdateActive<'info> {
                 "Invalid stake validator index. Need to point into validator {}",
                 validator.validator_account
             );
-            return Err(ProgramError::InvalidInstructionData);
+            return Err(ProgramError::InvalidInstructionData.into());
         }
         if delegation.deactivation_epoch != std::u64::MAX {
             // is deactivated or deactivating
@@ -176,7 +176,7 @@ impl<'info> UpdateActive<'info> {
                 "Cooling down stake {}. Please use UpdateCoolingDown",
                 self.stake_account.to_account_info().key
             );
-            return Err(ProgramError::InvalidAccountData);
+            return Err(ProgramError::InvalidAccountData.into());
         }
         // current lamports amount, to compare with previous
         let delegated_lamports = delegation.stake;
@@ -264,7 +264,7 @@ impl<'info> UpdateDeactivated<'info> {
     /// update mSOL price accordingly
     /// Optional Future Expansion: Partial: If the stake-account is a fully-deactivated stake account ready to withdraw,
     /// (cool-down period is complete) delete-withdraw the stake-account, send SOL to reserve-account
-    pub fn process(&mut self, stake_index: u32) -> ProgramResult {
+    pub fn process(&mut self, stake_index: u32) -> Result<()> {
         let BeginOutput {
             stake,
             is_treasury_msol_ready_for_transfer,
@@ -287,7 +287,7 @@ impl<'info> UpdateDeactivated<'info> {
                 "Stake {} is active",
                 self.stake_account.to_account_info().key
             );
-            return Err(ProgramError::InvalidAccountData);
+            return Err(ProgramError::InvalidAccountData.into());
         }
         // current lamports amount, to compare with previous
         let delegated_lamports = delegation.stake;
